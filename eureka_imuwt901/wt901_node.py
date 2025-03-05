@@ -78,12 +78,16 @@ class WT901Node(Node):
         wy = int.from_bytes([wyH, wyL], byteorder="big", signed=True) / 32768 * 2000 / 180 * self.PI
         wz = int.from_bytes([wzH, wzL], byteorder="big", signed=True) / 32768 * 2000 / 180 * self.PI
 
+        Roll = int.from_bytes([RollH, RollL], byteorder="big", signed=True) / 32768 * self.PI
+        Pitch = int.from_bytes([PitchH, PitchL], byteorder="big", signed=True) / 32768 * self.PI
+        Yaw = int.from_bytes([YawH, YawL], byteorder="big", signed=True) / 32768 * self.PI
+
         current_time = self.get_clock().now().to_msg().sec
         dt = 0.02
         self.last_time = current_time
 
-        self.roll += wx * dt
-        self.pitch += wy * dt
+        self.roll = -Roll
+        self.pitch = -Pitch
         self.yaw += wz * dt
 
         if DEBUG:
@@ -104,7 +108,7 @@ class WT901Node(Node):
 
         t = TransformStamped()  
         t.header.stamp = self.get_clock().now().to_msg()
-        t.header.frame_id = "imu"
+        t.header.frame_id = "imuwt"
         t.child_frame_id = "base_link"
         t.transform.translation.x = 0.0
         t.transform.translation.y = 0.0
