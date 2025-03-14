@@ -14,9 +14,9 @@ class WT901Node(Node):
     def __init__(self):
         super().__init__('wt901_node')
 
-        self.declare_parameter("orientation_covariance", [-1.0] * 9)
-        self.declare_parameter("linear_acceleration_covariance", [-1.0] * 9)
-        self.declare_parameter("angular_velocity_covariance", [-1.0] * 9)
+        self.declare_parameter("orientation_covariance", [0.0479, 0, 0, 0, 0.0207, 0, 0, 0, 0.0041])
+        self.declare_parameter("linear_acceleration_covariance", [0.0364, 0, 0, 0, 0.0048, 0, 0, 0, 0.0796])
+        self.declare_parameter("angular_velocity_covariance", [0.0663, 0, 0, 0, 0.1453, 0, 0, 0, 0.0378])
 
         self.orientation_covariance = self.get_parameter("orientation_covariance").value
         self.linear_acceleration_covariance = self.get_parameter("linear_acceleration_covariance").value
