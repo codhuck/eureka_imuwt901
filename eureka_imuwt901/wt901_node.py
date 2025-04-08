@@ -65,9 +65,6 @@ class WT901Node(Node):
             self.get_logger().warn("Received incomplete data!")
             return
 
-        if DEBUG:
-            self.get_logger().info(f"Received data: {' '.join(format(x, '02X') for x in data)}")
-
         axL, axH, ayL, ayH, azL, azH, wxL, wxH, wyL, wyH, wzL, wzH, RollL, RollH, PitchL, PitchH, YawL, YawH = data
 
         ax = int.from_bytes([axH, axL], byteorder="big", signed=True) / 32768 * 16 * self.g
@@ -89,11 +86,6 @@ class WT901Node(Node):
         self.roll = -Roll
         self.pitch = -Pitch
         self.yaw += wz * dt
-
-        if DEBUG:
-            self.get_logger().info(f"Acceleration: {ax:.2f}, {ay:.2f}, {az:.2f}")
-            self.get_logger().info(f"Gyro: {wx:.2f}, {wy:.2f}, {wz:.2f}")
-            self.get_logger().info(f"Angles (Roll, Pitch, Yaw): {self.roll:.2f}, {self.pitch:.2f}, {self.yaw:.2f}")
 
         imu.angular_velocity = Vector3(x=wx, y=-wy, z=-wz)
         imu.linear_acceleration = Vector3(x=ax,y=-ay, z=-az - 2 * self.g)
