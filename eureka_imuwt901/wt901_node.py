@@ -14,9 +14,9 @@ class WT901Node(Node):
     def __init__(self):
         super().__init__('wt901_node')
 
-        self.declare_parameter("orientation_covariance", [0.0479, 0, 0, 0, 0.0207, 0, 0, 0, 0.0041])
-        self.declare_parameter("linear_acceleration_covariance", [0.0364, 0, 0, 0, 0.0048, 0, 0, 0, 0.0796])
-        self.declare_parameter("angular_velocity_covariance", [0.0663, 0, 0, 0, 0.1453, 0, 0, 0, 0.0378])
+        self.declare_parameter("orientation_covariance", [0.0479, 0.0, 0.0, 0.0, 0.0207, 0.0, 0.0, 0.0, 0.0041])
+        self.declare_parameter("linear_acceleration_covariance", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        self.declare_parameter("angular_velocity_covariance", [0.0663, 0.0, 0.0, 0.0, 0.1453, 0.0, 0.0, 0.0, 0.0378])
 
         self.orientation_covariance = self.get_parameter("orientation_covariance").value
         self.linear_acceleration_covariance = self.get_parameter("linear_acceleration_covariance").value
@@ -39,6 +39,7 @@ class WT901Node(Node):
             exit(1)
 
         self.pub_imu = self.create_publisher(Imu, '/imu/data', 10)
+        self.pub_compass = self.create_publisher(Imu, '/imu/compass', 10)
 
         self.tf_broadcaster = TransformBroadcaster(self)
 
@@ -47,10 +48,18 @@ class WT901Node(Node):
         self.pitch = 0.0
         self.yaw = 0.0
 
+
+        self.vxglob = 0.0
+        self.vyglob = 0.0
+
+        self.xglob = 0.0
+        self.yglob =0.0
+
         self.timer = self.create_timer(0.02, self.update)
 
     def update(self):
         imu = Imu()
+        compass = Imu()
 
         imu.angular_velocity_covariance = self.angular_velocity_covariance
         imu.linear_acceleration_covariance = self.linear_acceleration_covariance
@@ -66,6 +75,7 @@ class WT901Node(Node):
             return
 
         axL, axH, ayL, ayH, azL, azH, wxL, wxH, wyL, wyH, wzL, wzH, RollL, RollH, PitchL, PitchH, YawL, YawH = data
+        print(axL, axH, ayL, ayH, azL, azH, wxL, wxH, wyL, wyH, wzL, wzH, RollL, RollH, PitchL, PitchH, YawL, YawH)             
 
         ax = int.from_bytes([axH, axL], byteorder="big", signed=True) / 32768 * 16 * self.g
         ay = int.from_bytes([ayH, ayL], byteorder="big", signed=True) / 32768 * 16 * self.g
@@ -83,32 +93,52 @@ class WT901Node(Node):
         dt = 0.02
         self.last_time = current_time
 
-        self.roll = -Roll
-        self.pitch = -Pitch
-        self.yaw += wz * dt
+        self.roll = Roll
+        self.pitch = Pitch
+        self.yaw = Yaw
 
-        imu.angular_velocity = Vector3(x=wx, y=-wy, z=-wz)
-        imu.linear_acceleration = Vector3(x=ax,y=-ay, z=-az - 2 * self.g)
+        imu.angular_velocity = Vector3(x=wx, y=-wy, z=wz)
+        imu.linear_acceleration = Vector3(x=ax,y=-ay, z=-az )
 
         q = quaternion_from_euler(self.roll, self.pitch, self.yaw)
         imu.orientation = Quaternion(x=q[0], y=q[1], z=q[2], w=q[3])
+        compass.angular_velocity = Vector3(x= Roll, y=Pitch, z=Yaw)
+        compass.header.stamp = self.get_clock().now().to_msg()
+        compass.header.frame_id = "compass"
 
+        self.pub_compass.publish(compass)
         imu.header.stamp = self.get_clock().now().to_msg()
         imu.header.frame_id = "imu"
 
         self.pub_imu.publish(imu)
 
-        t = TransformStamped()  
+        self.vxglob = self.vxglob+(ax*0.02)
+        self.vyglob = self.vyglob+(ay*0.02)
+
+        print(self.vxglob)
+        #print(self.vyglob)
+
+        self.xglob= self.xglob+(self.vxglob*0.02)
+        self.yglob= self.yglob+(self.vyglob*0.02)
+
+        t = TransformStamped()
+
+        # Read message content and assign it to
+        # corresponding tf variables
         t.header.stamp = self.get_clock().now().to_msg()
-        t.header.frame_id = "base_link"
-        t.child_frame_id = "imu"
+        t.header.frame_id = 'odom'
+        t.child_frame_id = 'base_link'
+
+
         t.transform.translation.x = 0.0
         t.transform.translation.y = 0.0
         t.transform.translation.z = 0.0
-        t.transform.rotation.w = 1.0
-        t.transform.rotation.x = 0.0
-        t.transform.rotation.y = 0.0
-        t.transform.rotation.z = 0.0
+
+        q = quaternion_from_euler(self.roll, self.pitch, self.yaw)
+        t.transform.rotation.x = q[0]
+        t.transform.rotation.y = q[1]
+        t.transform.rotation.z = q[2]
+        t.transform.rotation.w = q[3]
 
         self.tf_broadcaster.sendTransform(t)
 

@@ -11,7 +11,7 @@ def generate_launch_description():
     )
 
     main_node = TimerAction(
-        period=5.0, 
+        period=1.0, 
         actions=[
             Node(
                 package='eureka_imuwt901',
@@ -23,6 +23,5 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        calibration_node,
         main_node,
     ])

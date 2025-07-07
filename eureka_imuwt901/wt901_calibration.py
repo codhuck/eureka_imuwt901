@@ -31,9 +31,10 @@ class WT901Node(Node):
         time.sleep(timeout)
 
         self.get_logger().info(f"Accelerometer Calibration. Waiting for 5 sec...")
-        send(self.ser, 'FF AA 01 01 00', 5) 
+        #send(self.ser, 'FF AA 01 01 00', 5) 
+        send(self.ser, 'FF AA 01 07 00', 30)
         send(self.ser, 'FF AA 01 00 00')  
-        send(self.ser, 'FF AA 03 00 00')  
+        send(self.ser, 'FF AA 00 00 00')  
         self.get_logger().info(f"Calibration finished")
 
         send(self.ser, 'FF AA 03 08 00') 
